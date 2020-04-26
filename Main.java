@@ -32,6 +32,7 @@ import javax.swing.JTextArea;
 import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.UIManager;
+import javax.swing.JScrollPane;
 
 public class Main {
 
@@ -60,7 +61,7 @@ public class Main {
 	
 	  
     //Se llama y empieza el BinarySearchTree
-    private final BinarySearchTree<Association<String, String>> myBinarySearchTree = new BinarySearchTree<>();
+    private final Tree_2_3<Association<String, String>> myTree = new Tree_2_3<>();
 	private JTextArea inputTextArea;
 	
 	private boolean isSpanishLoaded, isTextoLoaded = false;
@@ -68,6 +69,9 @@ public class Main {
 	
 	private JTextArea outputTextArea;
 	private JButton btnTranslate;
+	private JLabel lblTraducir;
+	private JLabel lblCheckmarkTranslate;
+	private JLabel lblErrorTranslate;
 	
 
 	/**
@@ -133,7 +137,7 @@ public class Main {
 		rdbtnRedBlackTree.setBounds(431, 208, 120, 23);
 		seleccionar.add(rdbtnRedBlackTree);
 		
-		rdbtnHashMap = new JRadioButton("Hash Map");
+		rdbtnHashMap = new JRadioButton("2-3 Tree");
 		rdbtnHashMap.setFont(new Font("Tahoma", Font.PLAIN, 12));
 		rdbtnHashMap.setBounds(431, 242, 120, 23);
 		seleccionar.add(rdbtnHashMap);
@@ -215,39 +219,8 @@ public class Main {
 		btnCargarSpanish.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				
-				BufferedReader reader = null;
-				
-                try {
-                    reader = new BufferedReader(new FileReader("src/diccionario(base).txt"));
-                    String text;
-                    while ((text = reader.readLine()) != null) {
-                        if (text.charAt(0) == '(') {
-                            text = text.substring(1);
-                        }
-                        if (text.charAt(text.length() - 1) == ')') {
-                            text = text.substring(0, text.length() - 1);
-                        }
-                        final String[] temp = text.split(",");
-                        if (temp.length > 1) {
-                            // Crea una nueva associacion con el valor de temp[0] = palabra en ingles. 
-                            // Crea una nueva associacion con el valor de temp[1] = palabra en español 
-                            final Association<String, String> a = new Association(temp[0], temp[1]);
-                            myBinarySearchTree.add(a);
-                        }
-                    }
-
-                } catch (IOException ex) {
-                	lblErrorSpanish.setVisible(true);
-                	JOptionPane.showMessageDialog(null, "Archivo no encontrado. Verificar archivo Spanish.txt en directorio src/...");
-				}
-                
-                isSpanishLoaded = true;
-                
-                final List<Association<String, String>> list = myBinarySearchTree.inOrder();
-                String dictionaryContent = "";
-
-                for (final Association association : list)
-                    dictionaryContent += association.getKey() + "," + association.getValue() + "\n";
+				// METODO PARA CARGAR SPANISH.TXT
+				cargarSpanish();
 				
                 lblChechmarkSpanish.setVisible(true);
 				btnCargarSpanish.setVisible(false);
@@ -276,7 +249,7 @@ public class Main {
 				
 				BufferedReader reader = null;
                 try {
-                    reader = new BufferedReader(new FileReader("src/texto(base).txt"));
+                    reader = new BufferedReader(new FileReader("src/texto.txt"));
                     String text;
                     while ((text = reader.readLine()) != null) {
                         inputTextArea.append("\n" + text);
@@ -342,10 +315,10 @@ public class Main {
 	                    final String[] textToTranslate = line.split(" ");
 	                    for (final String word : textToTranslate) {
 	                        // Para cada palabra obtiene la asociacion que coincide con el key
-	                        final Association<String, String> a = myBinarySearchTree.get(new Association<>(word, null));
+	                        final Association<String, String> a = myTree.get(new Association<>(word, null));
 	                        if (a != null) {
 	                            // Si es que existe una asociacion la agrega en el outputTextArea 
-	                            outputTextArea.append(a.getValue().toString());
+	                            outputTextArea.append(" " + a.getValue().toString() + " ");
 	                        } else {
 	                            outputTextArea.append(" " + "*" + word + "*" + " ");
 	                        }
@@ -355,9 +328,14 @@ public class Main {
 	                }
 
 	            } else {
-	               System.out.println("Error");
-
+	            	lblErrorTranslate.setVisible(true);
+                	JOptionPane.showMessageDialog(null, "Error encontrado al traducir oracion. Intentar de nuevo");
 	            }
+				
+				btnTranslate.setVisible(false);
+				lblTraducir.setVisible(true);
+				lblCheckmarkTranslate.setVisible(true);
+				
 			}
 		});
 		btnTranslate.setVisible(false);
@@ -365,8 +343,28 @@ public class Main {
 		btnTranslate.setFont(new Font("Arial", Font.PLAIN, 12));
 		btnTranslate.setBorder(null);
 		btnTranslate.setBackground(new Color(0, 153, 204));
-		btnTranslate.setBounds(125, 415, 150, 30);
+		btnTranslate.setBounds(125, 430, 150, 30);
 		panelButtons.add(btnTranslate);
+		
+		lblTraducir = new JLabel("Traducir");
+		lblTraducir.setVisible(false);
+		lblTraducir.setHorizontalAlignment(SwingConstants.CENTER);
+		lblTraducir.setFont(new Font("Arial", Font.PLAIN, 13));
+		lblTraducir.setBounds(0, 430, 400, 30);
+		panelButtons.add(lblTraducir);
+		
+		lblCheckmarkTranslate = new JLabel("", checkIcono, JLabel.CENTER);
+		lblCheckmarkTranslate.setVisible(false);
+		lblCheckmarkTranslate.setBounds(0, 470, 400, 30);
+		panelButtons.add(lblCheckmarkTranslate);
+		
+		lblErrorTranslate = new JLabel("X");
+		lblErrorTranslate.setForeground(Color.RED);
+		lblErrorTranslate.setVisible(false);
+		lblErrorTranslate.setFont(new Font("Arial", Font.BOLD, 20));
+		lblErrorTranslate.setHorizontalAlignment(SwingConstants.CENTER);
+		lblErrorTranslate.setBounds(0, 470, 400, 30);
+		panelButtons.add(lblErrorTranslate);
 		
 		JPanel panelContent = new JPanel();
 		panelContent.setBackground(new Color(251, 251, 251));
@@ -415,4 +413,74 @@ public class Main {
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
+	
+	
+	// METODO PARA CARGAR SPANISH.TXT
+	public void cargarSpanish(){
+		BufferedReader reader = null;
+		
+        try {
+            reader = new BufferedReader(new FileReader("src/Spanish.txt"));
+            String text;
+            String secondString = "";
+            while ((text = reader.readLine()) != null) {
+            	
+            	if (text.charAt(0) == '#') {
+                    continue;
+                } else {
+                	
+                	final String[] temp = text.split("\\s+");
+                	
+                    if(temp.length > 2) {
+                    	secondString = temp[1] + " " + temp[2];
+                    	temp[1] = secondString;
+                    } else if(temp.length == 2) {
+                    	secondString = temp[1];
+                    	temp[1] = secondString;
+                    } else if(temp.length < 1) {
+                    	secondString = "|";
+                    	temp[1] = secondString;
+                    }
+                                                 
+                    if (temp.length > 1) {
+                        // Crea una nueva associacion con el valor de temp[0] = palabra en ingles. 
+                        // Crea una nueva associacion con el valor de temp[1] = palabra en español 
+                        final Association<String, String> a = new Association(temp[0], temp[1]);
+                        myTree.add(a);
+                    }
+                }
+
+                
+            }
+
+        } catch (IOException ex) {
+        	lblErrorSpanish.setVisible(true);
+        	JOptionPane.showMessageDialog(null, "Archivo no encontrado. Verificar archivo Spanish.txt en directorio src/...");
+		}
+        
+        isSpanishLoaded = true;
+        
+        final List<Association<String, String>> list = myTree.inOrder();
+        String dictionaryContent = "";
+
+        for (final Association association : list)
+            dictionaryContent += association.getKey() + "," + association.getValue() + "\n";
+	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

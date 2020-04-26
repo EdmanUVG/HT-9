@@ -1,12 +1,4 @@
 
-/**
-* Methods extracted from https://www.baeldung.com/java-binary-tree
-* */
-
-/**
- * A single BinaryTree class with an association as value
- * @param <E> the Association-type object
- */
 public class BinaryTree<E> {
     /**
      * The containing value of the BinaryTree
