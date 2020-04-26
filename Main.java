@@ -8,14 +8,30 @@ import java.awt.Color;
 import java.awt.CardLayout;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
+
+import javafx.scene.control.Alert;
+
 import java.awt.Font;
 import java.awt.Image;
 
 import javax.swing.JRadioButton;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.awt.event.ActionEvent;
+import javax.swing.JTextArea;
+import javax.swing.border.LineBorder;
+import javax.swing.border.TitledBorder;
+import javax.swing.UIManager;
 
 public class Main {
 
@@ -36,6 +52,23 @@ public class Main {
 	private JButton btnCargarTexto;
 	private JLabel lblChechmarkSpanish;
 	private JLabel lblCheckmarkTexto;
+	
+
+	private JPanel translator;
+	private JLabel lblErrorSpanish;
+	private JLabel lblErrorTexto;
+	
+	  
+    //Se llama y empieza el BinarySearchTree
+    private final BinarySearchTree<Association<String, String>> myBinarySearchTree = new BinarySearchTree<>();
+	private JTextArea inputTextArea;
+	
+	private boolean isSpanishLoaded, isTextoLoaded = false;
+	
+	
+	private JTextArea outputTextArea;
+	private JButton btnTranslate;
+	
 
 	/**
 	 * Launch the application.
@@ -182,7 +215,41 @@ public class Main {
 		btnCargarSpanish.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				
-				lblChechmarkSpanish.setVisible(true);
+				BufferedReader reader = null;
+				
+                try {
+                    reader = new BufferedReader(new FileReader("src/diccionario(base).txt"));
+                    String text;
+                    while ((text = reader.readLine()) != null) {
+                        if (text.charAt(0) == '(') {
+                            text = text.substring(1);
+                        }
+                        if (text.charAt(text.length() - 1) == ')') {
+                            text = text.substring(0, text.length() - 1);
+                        }
+                        final String[] temp = text.split(",");
+                        if (temp.length > 1) {
+                            // Crea una nueva associacion con el valor de temp[0] = palabra en ingles. 
+                            // Crea una nueva associacion con el valor de temp[1] = palabra en español 
+                            final Association<String, String> a = new Association(temp[0], temp[1]);
+                            myBinarySearchTree.add(a);
+                        }
+                    }
+
+                } catch (IOException ex) {
+                	lblErrorSpanish.setVisible(true);
+                	JOptionPane.showMessageDialog(null, "Archivo no encontrado. Verificar archivo Spanish.txt en directorio src/...");
+				}
+                
+                isSpanishLoaded = true;
+                
+                final List<Association<String, String>> list = myBinarySearchTree.inOrder();
+                String dictionaryContent = "";
+
+                for (final Association association : list)
+                    dictionaryContent += association.getKey() + "," + association.getValue() + "\n";
+				
+                lblChechmarkSpanish.setVisible(true);
 				btnCargarSpanish.setVisible(false);
 				btnCargarTexto.setEnabled(true);
 			}
@@ -204,8 +271,27 @@ public class Main {
 		btnCargarTexto.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				
-				lblChechmarkSpanish.setVisible(true);
+				welcome.setVisible(false);
+				translator.setVisible(true);
+				
+				BufferedReader reader = null;
+                try {
+                    reader = new BufferedReader(new FileReader("src/texto(base).txt"));
+                    String text;
+                    while ((text = reader.readLine()) != null) {
+                        inputTextArea.append("\n" + text);
+                    }
+
+                } catch (final IOException ex) {
+                	lblErrorTexto.setVisible(true);
+                	JOptionPane.showMessageDialog(null, "Archivo no encontrado. Verificar archivo texto.txt en directorio src/...");
+                } 
+                
+                isTextoLoaded = true;
+				
+                lblCheckmarkTexto.setVisible(true);
 				btnCargarTexto.setVisible(false);
+				btnTranslate.setVisible(true);
 			}
 		});
 		btnCargarTexto.setEnabled(false);
@@ -223,8 +309,64 @@ public class Main {
 		panelButtons.add(lblChechmarkSpanish);
 		
 		lblCheckmarkTexto = new JLabel("", checkIcono, JLabel.CENTER); 
+		lblCheckmarkTexto.setVisible(false);
 		lblCheckmarkTexto.setBounds(0, 342, 400, 30);
 		panelButtons.add(lblCheckmarkTexto);
+		
+		lblErrorSpanish = new JLabel("X");
+		lblErrorSpanish.setVisible(false);
+		lblErrorSpanish.setForeground(Color.RED);
+		lblErrorSpanish.setHorizontalAlignment(SwingConstants.CENTER);
+		lblErrorSpanish.setFont(new Font("Arial", Font.BOLD, 20));
+		lblErrorSpanish.setBounds(0, 210, 400, 30);
+		panelButtons.add(lblErrorSpanish);
+		
+		lblErrorTexto = new JLabel("X");
+		lblErrorTexto.setVisible(false);
+		lblErrorTexto.setForeground(Color.RED);
+		lblErrorTexto.setHorizontalAlignment(SwingConstants.CENTER);
+		lblErrorTexto.setFont(new Font("Arial", Font.BOLD, 20));
+		lblErrorTexto.setBounds(0, 342, 400, 30);
+		panelButtons.add(lblErrorTexto);
+		
+		btnTranslate = new JButton("Translate");
+		btnTranslate.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				
+				if (isTextoLoaded && isSpanishLoaded) {
+	                // Separa el inputTextArea en lineas y las guarda como Array
+	                final List<String> initLines = Arrays.asList(inputTextArea.getText().split("\n"));
+
+	                for (final String line : initLines) {
+	                    
+	                    final String[] textToTranslate = line.split(" ");
+	                    for (final String word : textToTranslate) {
+	                        // Para cada palabra obtiene la asociacion que coincide con el key
+	                        final Association<String, String> a = myBinarySearchTree.get(new Association<>(word, null));
+	                        if (a != null) {
+	                            // Si es que existe una asociacion la agrega en el outputTextArea 
+	                            outputTextArea.append(a.getValue().toString());
+	                        } else {
+	                            outputTextArea.append(" " + "*" + word + "*" + " ");
+	                        }
+	                    }
+	                    outputTextArea.append("\n");
+
+	                }
+
+	            } else {
+	               System.out.println("Error");
+
+	            }
+			}
+		});
+		btnTranslate.setVisible(false);
+		btnTranslate.setForeground(Color.WHITE);
+		btnTranslate.setFont(new Font("Arial", Font.PLAIN, 12));
+		btnTranslate.setBorder(null);
+		btnTranslate.setBackground(new Color(0, 153, 204));
+		btnTranslate.setBounds(125, 415, 150, 30);
+		panelButtons.add(btnTranslate);
 		
 		JPanel panelContent = new JPanel();
 		panelContent.setBackground(new Color(251, 251, 251));
@@ -241,6 +383,33 @@ public class Main {
 		lblUVGLogo.setHorizontalAlignment(SwingConstants.CENTER);
 		lblUVGLogo.setBounds(200, 190, 200, 200);
 		welcome.add(lblUVGLogo);
+		
+		translator = new JPanel();
+		translator.setBackground(new Color(251, 251, 251));
+		panelContent.add(translator, "name_201743215252300");
+		translator.setLayout(null);
+		
+		JLabel lblTraductor = new JLabel("Traductor");
+		lblTraductor.setHorizontalAlignment(SwingConstants.CENTER);
+		lblTraductor.setFont(new Font("Arial", Font.BOLD, 17));
+		lblTraductor.setBounds(0, 63, 583, 30);
+		translator.add(lblTraductor);
+		
+		inputTextArea = new JTextArea();
+		inputTextArea.setBackground(new Color(251, 251, 251));
+		inputTextArea.setRows(2);
+		inputTextArea.setLineWrap(true);
+		inputTextArea.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "     Oracion     ", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		inputTextArea.setBounds(0, 160, 583, 100);
+		translator.add(inputTextArea);
+		
+		outputTextArea = new JTextArea();
+		outputTextArea.setBackground(new Color(251, 251, 251));
+		outputTextArea.setRows(2);
+		outputTextArea.setLineWrap(true);
+		outputTextArea.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "       Traduccion       ", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		outputTextArea.setBounds(0, 340, 583, 100);
+		translator.add(outputTextArea);
 		frame.setBackground(Color.WHITE);
 		frame.setSize(1000, 650);
 		frame.setLocationRelativeTo(null);
